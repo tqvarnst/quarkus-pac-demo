@@ -35,6 +35,7 @@ spec:
     workspaces:
       - name: source
       - name: basic-auth
+      - name: maven-settings
     tasks:
       - name: fetch-repository
         taskRef:
@@ -51,21 +52,35 @@ spec:
             value: $(params.revision)
       # Customize this task if you like, or just do a taskRef
       # to one of the hub task.
-      - name: noop-task
-        runAfter:
-          - fetch-repository
+      - name: build-java
+        taskRef:
+          name: maven
+          kind: ClusterTask
+        params:
+        - name: GOALS
+          value: 
+            - package
         workspaces:
-          - name: source
-            workspace: source
-        taskSpec:
-          workspaces:
-            - name: source
-          steps:
-            - name: noop-task
-              image: registry.access.redhat.com/ubi8/ubi-micro:8.4
-              workingDir: $(workspaces.source.path)
-              script: |
-                exit 0
+        - name: source
+          workspace: source
+        - name: maven-settings
+          workspace: maven-settings
+        runAfter:
+        - fetch-repository
+      - name: build-image
+        taskRef:
+          name: buildah
+          kind: ClusterTask
+        params:
+        - name: DOCKERFILE
+          value: src/main/docker/Dockerfile.jvm
+        - name: IMAGE
+          value: image-registry.openshift-image-registry.svc:5000/quarkus-pac-demo/quarkus-hello
+        workspaces:
+        - name: source
+          workspace: source
+        runAfter:
+        - build-java
   workspaces:
   - name: source
     volumeClaimTemplate:
@@ -80,4 +95,6 @@ spec:
   - name: basic-auth
     secret:
       secretName: "pac-git-basic-auth-{{repo_owner}}-{{repo_name}}"
+  - name: maven-settings
+    emptyDir: {}
       
