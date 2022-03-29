@@ -76,6 +76,8 @@ spec:
           value: src/main/docker/Dockerfile.jvm
         - name: IMAGE
           value: image-registry.openshift-image-registry.svc:5000/tqvarnst-pac-demo/quarkus-hello
+        - name: TLSVERIFY
+          value: false
         workspaces:
         - name: source
           workspace: source
